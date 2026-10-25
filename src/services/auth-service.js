@@ -46,23 +46,29 @@ export const register = async ({ name, email, password, phone = null, city = nul
 
 export const authenticate = async ({ email, password }) => {
   const normalizedEmail = email.trim().toLowerCase();
+  console.log('[auth] Login attempt for:', normalizedEmail);
   const user = await userRepository.findByEmailWithPassword(normalizedEmail);
 
   if (!user) {
+    console.log('[auth] User not found for:', normalizedEmail);
     await bcrypt.compare(password, DUMMY_HASH);
     throw new AppError(401, 'Email or password is incorrect', 'INVALID_CREDENTIALS');
   }
 
+  console.log('[auth] User found:', { email: user.email, role: user.role, isActive: user.isActive });
   const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
   if (!passwordMatches) {
+    console.log('[auth] Password mismatch for:', normalizedEmail);
     throw new AppError(401, 'Email or password is incorrect', 'INVALID_CREDENTIALS');
   }
 
   if (!user.isActive) {
+    console.log('[auth] Account disabled for:', normalizedEmail);
     throw new AppError(403, 'This account has been deactivated', 'ACCOUNT_DISABLED');
   }
 
+  console.log('[auth] Login successful for:', normalizedEmail);
   return PUBLIC_FIELDS(user);
 };
 

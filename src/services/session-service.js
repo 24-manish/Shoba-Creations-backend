@@ -11,7 +11,7 @@ import * as refreshTokenRepository from '../repositories/refresh-token-repositor
 const baseCookieOptions = {
   httpOnly: true,
   secure: env.cookieSecure,
-  sameSite: 'lax',
+  sameSite: env.isProduction ? 'none' : 'lax',
   path: '/'
 };
 

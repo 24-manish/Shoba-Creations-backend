@@ -61,10 +61,11 @@ app.get('/api/health', (req, res) => {
   sendData(res, { status: 'ok' });
 });
 
-// Every state-changing request must echo the double-submit CSRF token. Sign-in
-// and registration are exempt because a first-time visitor has no CSRF cookie
-// yet, and neither endpoint relies on an existing session.
-const CSRF_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/register']);
+// Every state-changing request must echo the double-submit CSRF token. Sign-in,
+// registration, and the CSRF token endpoint are exempt because a first-time
+// visitor has no CSRF cookie yet, and neither endpoint relies on an existing
+// session. The CSRF endpoint must be accessible to issue the initial token.
+const CSRF_EXEMPT_PATHS = new Set(['/api/auth/login', '/api/auth/register', '/api/auth/csrf']);
 
 app.use('/api', (req, res, next) => {
   const path = req.originalUrl.split('?')[0];
