@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
-import path from 'node:path';
 import multer from 'multer';
 import { env } from '../config/env.js';
 import { AppError } from './async-handler.js';
-
-export const uploadDirectory = path.resolve(process.cwd(), env.uploadDir);
 
 const ALLOWED_TYPES = new Map([
   ['image/jpeg', '.jpg'],
@@ -15,7 +11,7 @@ const ALLOWED_TYPES = new Map([
 ]);
 
 // Signatures are checked against the declared MIME type so a renamed executable
-// cannot be written into the uploads directory.
+// cannot be uploaded to storage.
 const SIGNATURES = [
   { mime: 'image/jpeg', bytes: [0xff, 0xd8, 0xff] },
   { mime: 'image/png', bytes: [0x89, 0x50, 0x4e, 0x47] },
@@ -65,8 +61,6 @@ const upload = multer({
 
 export const uploadProductImages = upload.array('images', env.uploadMaxFiles);
 
-export const ensureUploadDirectory = () => mkdir(uploadDirectory, { recursive: true });
-
 export const buildStoredFile = (file) => {
   const extension = resolveExtension(file.buffer, file.mimetype);
 
@@ -78,10 +72,12 @@ export const buildStoredFile = (file) => {
     throw new AppError(415, 'The file contents do not match a supported image format', 'INVALID_IMAGE');
   }
 
-  // Random names keep user input out of the filesystem path entirely.
+  // Random names keep user input out of the storage path entirely.
+  const key = `products/${randomUUID()}${extension}`;
   return {
-    filename: `${randomUUID()}${extension}`,
+    key,
     size: file.size,
-    originalName: file.originalname
+    originalName: file.originalname,
+    extension
   };
 };

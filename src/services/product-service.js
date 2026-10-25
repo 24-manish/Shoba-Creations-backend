@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { query } from '../db/pool.js';
 import { AppError } from '../middleware/async-handler.js';
-import { buildStoredFile, uploadDirectory } from '../middleware/upload.js';
+import { buildStoredFile } from '../middleware/upload.js';
+import { uploadToStorage, deleteFromStorage } from '../lib/s3.js';
+import { env } from '../config/env.js';
 import * as productRepository from '../repositories/product-repository.js';
 import { uniqueSlug } from './slug.js';
 
@@ -147,16 +147,26 @@ export const restoreMany = async (ids) => {
   return productRepository.reactivateMany(ids);
 };
 
+const extractStorageKey = (url) => {
+  // Extract the key from S3 URL: https://endpoint/bucket/key
+  if (!url) return null;
+  const parts = url.split('/');
+  const bucketIndex = parts.findIndex(p => p === env.s3Bucket);
+  if (bucketIndex === -1 || bucketIndex === parts.length - 1) return null;
+  return parts.slice(bucketIndex + 1).join('/');
+};
+
 const removeStoredFiles = async (urls) => {
   for (const { url } of urls) {
-    if (url?.startsWith('/uploads/')) {
-      await unlink(path.join(uploadDirectory, path.basename(url))).catch(() => {});
+    const key = extractStorageKey(url);
+    if (key) {
+      await deleteFromStorage(key).catch(() => {});
     }
   }
 };
 
 /**
- * Permanently removes a product from the database and disk. Order items keep a
+ * Permanently removes a product from the database and storage. Order items keep a
  * snapshot, so purging cannot corrupt order history; the force flag is still
  * required once a product has been referenced so a bulk purge cannot silently
  * destroy the lineage a customer history page relies on.
@@ -220,7 +230,7 @@ const nextPosition = async (productId, db) => {
 };
 
 /**
- * Persists uploaded images to local disk. A single product is capped at twelve
+ * Persists uploaded images to Supabase Storage (S3-compatible). A single product is capped at twelve
  * galleries; the first upload always becomes position 0 so the card art is the
  * primary image.
  */
@@ -239,15 +249,15 @@ export const addImages = async (productId, files) => {
   for (const file of files) {
     // multer's memoryStorage does not populate file.filename, and using the
     // client-supplied originalname as a path would be unsafe anyway. buildStoredFile
-    // verifies the bytes match the declared type and returns a random name.
-    const { filename } = buildStoredFile(file);
+    // verifies the bytes match the declared type and returns a random key.
+    const { key, extension } = buildStoredFile(file);
 
-    await writeFile(path.join(uploadDirectory, filename), file.buffer);
+    const url = await uploadToStorage(key, file.buffer, file.mimetype);
 
     await query(
       `INSERT INTO product_images (product_id, url, alt, position)
        VALUES ($1, $2, $3, $4)`,
-      [productId, `/uploads/${filename}`, product.name, await nextPosition(productId, { query })]
+      [productId, url, product.name, await nextPosition(productId, { query })]
     );
   }
 
@@ -266,11 +276,12 @@ export const deleteImage = async (productId, imageId) => {
     throw new AppError(404, 'Image was not found', 'IMAGE_NOT_FOUND');
   }
 
-  // Only files the API itself wrote are removed from disk, so an externally
+  // Only files the API itself wrote are removed from storage, so an externally
   // hosted URL referenced by the catalogue is left alone.
   const url = rows[0].url;
-  if (url?.startsWith('/uploads/')) {
-    await unlink(path.join(uploadDirectory, path.basename(url))).catch(() => {});
+  const key = extractStorageKey(url);
+  if (key) {
+    await deleteFromStorage(key).catch(() => {});
   }
 
   return getAdminById(productId);

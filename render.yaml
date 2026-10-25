@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: shoba-creations-backend
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DATABASE_SCHEMA
+        value: public
+      - key: JWT_SECRET
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://shobacreations.netlify.app
+      - key: SUPABASE_URL
+        value: https://eofsjyihmocsbmsskabb.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: S3_ENDPOINT
+        value: https://eofsjyihmocsbmsskabb.storage.supabase.co/storage/v1/s3
+      - key: S3_REGION
+        value: ap-northeast-1
+      - key: S3_BUCKET
+        value: product-images
+      - key: FREE_SHIPPING_THRESHOLD
+        value: "9999"
+      - key: STANDARD_SHIPPING_COST
+        value: "299"
+      - key: EXPRESS_SHIPPING_COST
+        value: "599"
+      - key: COD_HANDLING_FEE
+        value: "50"
+      - key: ADMIN_NAME
+        value: Meera Chen
+      - key: ADMIN_EMAIL
+        value: admin@shobacreations.com
+      - key: ADMIN_PASSWORD
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true

@@ -37,13 +37,17 @@ export const env = Object.freeze({
   cookieSecure: parseBoolean(process.env.COOKIE_SECURE, process.env.NODE_ENV === 'production'),
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL ?? '15m',
   refreshTokenTtlDays: parseInteger(process.env.REFRESH_TOKEN_TTL_DAYS, 7),
-  uploadDir: process.env.UPLOAD_DIR ?? 'uploads',
   uploadMaxBytes: parseInteger(process.env.UPLOAD_MAX_BYTES, 5 * 1024 * 1024),
   uploadMaxFiles: parseInteger(process.env.UPLOAD_MAX_FILES, 6),
   freeShippingThreshold: parseInteger(process.env.FREE_SHIPPING_THRESHOLD, 9999),
   standardShippingCost: parseInteger(process.env.STANDARD_SHIPPING_COST, 299),
   expressShippingCost: parseInteger(process.env.EXPRESS_SHIPPING_COST, 599),
-  codHandlingFee: parseInteger(process.env.COD_HANDLING_FEE, 50)
+  codHandlingFee: parseInteger(process.env.COD_HANDLING_FEE, 50),
+  supabaseUrl: process.env.SUPABASE_URL,
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  s3Endpoint: process.env.S3_ENDPOINT,
+  s3Region: process.env.S3_REGION,
+  s3Bucket: process.env.S3_BUCKET
 });
 
 export const accessCookieName = `${env.cookiePrefix}sc_at`;
@@ -65,5 +69,25 @@ export const assertServerConfig = () => {
 
   if (!/^[a-z_][a-z0-9_]*$/.test(env.databaseSchema)) {
     throw new Error('DATABASE_SCHEMA must be a valid PostgreSQL identifier');
+  }
+
+  if (!env.supabaseUrl) {
+    throw new Error('SUPABASE_URL is required');
+  }
+
+  if (!env.supabaseServiceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required');
+  }
+
+  if (!env.s3Endpoint) {
+    throw new Error('S3_ENDPOINT is required');
+  }
+
+  if (!env.s3Region) {
+    throw new Error('S3_REGION is required');
+  }
+
+  if (!env.s3Bucket) {
+    throw new Error('S3_BUCKET is required');
   }
 };

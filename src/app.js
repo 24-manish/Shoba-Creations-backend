@@ -7,7 +7,6 @@ import { sendData } from './http.js';
 import { verifyCsrf } from './middleware/csrf.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { apiRateLimiter } from './middleware/rate-limit.js';
-import { uploadDirectory } from './middleware/upload.js';
 import adminRouter from './routes/admin-routes.js';
 import authRouter from './routes/auth-routes.js';
 import cartRouter from './routes/cart-routes.js';
@@ -53,9 +52,6 @@ app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(apiRateLimiter);
-
-// Uploaded product photography lives on local disk.
-app.use('/uploads', express.static(uploadDirectory, { maxAge: '7d', index: false, dotfiles: 'deny' }));
 
 app.get('/health', (req, res) => {
   sendData(res, { status: 'ok' });

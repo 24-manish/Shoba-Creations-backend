@@ -413,8 +413,8 @@ export const purge = async (ids) => {
   return rows;
 };
 
-// Only files the API itself wrote are removed from disk on purge, so an
-// externally hosted URL referenced by the catalogue is left alone.
+// Returns all image URLs for the given product IDs. The service layer filters
+// for S3-managed URLs to delete from storage.
 export const findImageUrls = async (ids) => {
   if (ids.length === 0) {
     return [];
@@ -423,7 +423,7 @@ export const findImageUrls = async (ids) => {
   const { rows } = await query(
     `SELECT product_id AS "productId", url
      FROM product_images
-     WHERE product_id = ANY($1::uuid[]) AND url LIKE '/uploads/%'`,
+     WHERE product_id = ANY($1::uuid[])`,
     [ids]
   );
 

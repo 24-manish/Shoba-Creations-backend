@@ -1,11 +1,9 @@
 import { app } from './app.js';
 import { assertServerConfig, env } from './config/env.js';
 import { closePool } from './db/pool.js';
-import { ensureUploadDirectory } from './middleware/upload.js';
 import * as refreshTokenRepository from './repositories/refresh-token-repository.js';
 
 assertServerConfig();
-await ensureUploadDirectory();
 
 // Expired refresh tokens are removed at boot and then hourly, which bounds the
 // size of the table without needing a scheduled external job.
